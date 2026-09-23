@@ -418,6 +418,25 @@ button {
   background: var(--primary);
   color: white;
 }
+.edit-button {
+  margin-top: 16px;
+
+  padding: 10px 15px;
+
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border: 1px solid var(--primary-dark);
+  border-radius: 8px;
+
+  font-size: 13px;
+
+  text-align: center;
+}
+
+.edit-button:hover {
+  background: var(--primary);
+  color: white;
+}
 
 .delete-button {
   margin-top: 9px;
@@ -442,6 +461,7 @@ button {
 
   color: var(--danger-dark);
 }
+
 
 /* =========================
    ADD EVENT FORM

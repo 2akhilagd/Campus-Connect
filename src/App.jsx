@@ -1,4 +1,4 @@
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router";
 
 import "./App.css";
@@ -11,15 +11,18 @@ import EventsPage from "./pages/EventsPage";
 import EventDetailsPage from "./pages/EventDetailsPage";
 import AboutPage from "./pages/AboutPage";
 
+
 function App() {
     const [events, setEvents] = useState([]);
+    const [editingEvent, setEditingEvent] = useState(null);
+
     useEffect(()=>{
-            fetch("http://localhost:5000/api/events")
-            .then((response)=>response.json())
-            .then((data)=>{
-                setEvents(data);
-            });
-        },[]);
+        fetch("http://localhost:5000/api/events")
+        .then((response)=>response.json())
+        .then((data)=>{
+            setEvents(data);
+        });
+    }, []);
 
     function handleAddEvent(newEvent) {
         fetch("http://localhost:5000/api/events", {
@@ -27,7 +30,7 @@ function App() {
             headers:{
                 "Content-Type":"application/json"
             },
-            body:JSON.stringify(newEvent)
+            body: JSON.stringify(newEvent)
         }).then((response)=>response.json())
         .then((data)=>{
             console.log(data);
@@ -40,18 +43,45 @@ function App() {
     }
 
     function handleDeleteEvent(eventId) {
-       fetch(`http://localhost:5000/api/events/${eventId}`,{
-        method:"DELETE"
-       }).then((response)=>response.json())
-       .then((data)=>{
-        console.log(data);
-        fetch("http://localhost:5000/api/events")
-        .then((response)=>response.json())
+        fetch(`http://localhost:5000/api/events/${eventId}`, {
+            method: "DELETE"
+        }).then((response)=>response.json())
         .then((data)=>{
-            setEvents(data);
+            console.log(data);
+            fetch("http://localhost:5000/api/events")
+            .then((response)=>response.json())
+            .then((data)=>{
+                setEvents(data);
+            });
         });
-       })
+    }
 
+    function handleEditEvent(eventId){
+        const selectedEvent = events.find(function(event){
+            return event.id === eventId;
+        });
+        setEditingEvent(selectedEvent);
+    }
+
+    function handleUpdateEvent(updatedEvent) {
+        fetch(`http://localhost:5000/api/events/${updatedEvent.id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(updatedEvent)
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log(data);
+
+            fetch("http://localhost:5000/api/events")
+                .then((response) => response.json())
+                .then((data) => {
+                    setEvents(data);
+                    setEditingEvent(null);
+                });
+        });
     }
 
     return (
@@ -66,6 +96,9 @@ function App() {
                             events={events}
                             onAddEvent={handleAddEvent}
                             onDeleteEvent={handleDeleteEvent}
+                            onEditEvent={handleEditEvent}
+                            editingEvent={editingEvent}
+                            onUpdateEvent={handleUpdateEvent}
                         />
                     }
                 />
