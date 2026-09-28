@@ -6,6 +6,10 @@ const mongoose = require("mongoose");
 const app = express();
 const dns = require("dns");
 const Event = require("./models/Event");
+const User = require("./models/User");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const authMiddleware = require("./middleware/authMiddleware");
 
 app.use(cors());
 app.use(express.json());
@@ -28,7 +32,7 @@ app.get("/api/events", async (req, res)=>{
     res.json(events);
 })
 
-app.delete("/api/events/:id", async (req, res)=>{
+app.delete("/api/events/:id",authMiddleware, async (req, res)=>{
     const deletedEvent = await Event.findByIdAndDelete(
         req.params.id
     )
@@ -44,7 +48,7 @@ app.delete("/api/events/:id", async (req, res)=>{
     })
 })
 
-app.post("/api/events", async (req, res)=>{
+app.post("/api/events", authMiddleware, async (req, res)=>{
     const newEvent = await Event.create(req.body);
     res.json({
         message: "Event Added Successfully!",
@@ -52,7 +56,7 @@ app.post("/api/events", async (req, res)=>{
     });
 });
 
-app.put("/api/events/:id", async (req, res)=>{
+app.put("/api/events/:id",authMiddleware, async (req, res)=>{
     const updatedEvent = await Event.findByIdAndUpdate(
         req.params.id,
         req.body,
@@ -71,6 +75,72 @@ app.put("/api/events/:id", async (req, res)=>{
     });
 });
 
+app.post("/api/register", async (req,res)=>{
+    const {name,email,password}=req.body;
+
+    const hashedPassword= await bcrypt.hash(password,10);
+
+    const newUser=new User({
+        name,email,password: hashedPassword
+    });
+    await newUser.save();
+    res.json({
+        message:"User Registered Successfully",
+        user:newUser
+    });
+});
+
+app.post("/api/login",async (req,res)=>{
+    const {email,password}=req.body;
+
+    const user=await User.findOne({email});
+    if(!user){
+        return res.status(401).json({
+            message:"Invaild Email or Password"
+        });
+    }
+
+    const passwordMatch= await bcrypt.compare(
+        password, user.password
+    )
+    if(!passwordMatch){
+         return res.status(401).json({
+            message:"Invaild Email or Password"
+        });
+    }
+
+    const token = jwt.sign(
+        {
+            userId:user._id,
+            email:user._email
+        },
+
+        process.env.JWT_SECRET,
+
+        {
+            expiresIn:"1h"
+        }
+
+    )
+    res.json({
+        message:"Login Successful!",
+        token:token,
+        user:{
+            id:user._id,
+            name:user.name,
+            email:user.email
+        }
+    })
+
+});
+
+app.get("/api/profile", authMiddleware,(req,res)=>{
+    res.json({
+        message:"you are athenticated",
+        user:req.user,
+    });
+})
+
 app.listen(5000, ()=>{
     console.log("Server is running on port 5000");
-})
+}) //always at the last
